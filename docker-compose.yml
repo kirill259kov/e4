@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: kirill259/e4:postgres
+    user: postgres
+    container_name: postgres_container
+    environment:
+    - POSTGRES_USER=hello_django
+    - POSTGRES_PASSWORD=hello_django
+    - POSTGRES_DB=hello_django
+    - PGUSER=postgres
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER $$POSTGRES_DB"]
+
+  django:
+    image: kirill259/e4:django
+    container_name: django
+    command: gunicorn hello_django.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - static_volume:/home/app/staticfiles
+      - .:/home/app/
+    expose:
+    - 8000
+    environment:
+      DJANGO_SUPERUSER_PASSWORD: "admin"
+      DJANGO_SUPERUSER_EMAIL: "admin@example.com"
+      DJANGO_SUPERUSER_USERNAME: "admin"
+      DB_ENGINE: "django.db.backends.postgresql"
+      DB_NAME: "hello_django"
+      POSTGRES_USER: "hello_django"
+      POSTGRES_PASSWORD: "hello_django"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+    depends_on:
+    - postgres
+
+  nginx:
+    image: kirill259/e4:nginx
+    ports:
+      - 1337:80
+    volumes:
+      - static_volume:/home/app/staticfiles
+    depends_on:
+      - django
+
+volumes:
+  static_volume:
+  media_volume:
+
